@@ -6,8 +6,11 @@ public class Player : MonoBehaviour
     public Camera playerCamera;
     public Transform handSocket;
     public float moveSpeed = 4f;
-    public float mouseSensitivity = 120f;
+    public float mouseSensitivity = 3f;
     public float gravity = -9.81f;
+    public Rigidbody RB;
+
+
     public float interactRange = 3f;
     public ItemType itemType;
     public GameObject handPrefab;
@@ -35,42 +38,44 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        Debug.Log("Update running");
-        MouseLook();
-        Move();
+
+        //If my mouse goes left/right my body moves left/right
+        float xRot = Input.GetAxis("Mouse X") * mouseSensitivity;
+        transform.Rotate(0, xRot, 0);
+
+        //If my mouse goes up/down my aim (but not body) go up/down
+        float yRot = -Input.GetAxis("Mouse Y") * mouseSensitivity;
+        playerCamera.transform.Rotate(yRot, 0, 0);
+
+        //Movement code
+        if (moveSpeed > 0)
+        {
+            //My temp velocity variable
+            Vector3 move = Vector3.zero;
+
+            //transform.forward/right are relative to the direction my body is facing
+            if (Input.GetKey(KeyCode.W))
+                move += transform.forward;
+            if (Input.GetKey(KeyCode.S))
+                move -= transform.forward;
+            if (Input.GetKey(KeyCode.A))
+                move -= transform.right;
+            if (Input.GetKey(KeyCode.D))
+                move += transform.right;
+            //I reduce my total movement to 1 and then multiply it by my speed
+            move = move.normalized * moveSpeed;
+
+            //Plug my calculated velocity into the rigidbody
+            RB.linearVelocity = move;
+        }
+
         if (Input.GetKeyDown(KeyCode.E))
         {
             TryInteract();
         }
     }
 
-    void MouseLook()
-    {
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
-
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -80f, 80f);
-
-        cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
-    }
-
-    void Move()
-    {
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
-
-        Vector3 move = transform.right * x + transform.forward * z;
-        controller.Move(move * moveSpeed * Time.deltaTime);
-
-        if (controller.isGrounded && velocity.y < 0)
-            velocity.y = -2f;
-
-        velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
-    }
- 
+    
 
     void TryInteract()
     {
